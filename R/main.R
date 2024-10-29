@@ -47,38 +47,91 @@ read_chl <- function(filepaths, units) {
         dplyr::bind_rows()
 }
 
+#' Read HP8452 .CSV file
+#'
+#' Read .CSV file and add a filename column.
+#'
+#' @param filepath String containing filepath(s) to .CSV files
+#' @param start Start of reaction. By default the function will use the lowest value of Time if missing.
+#' @param end Start of reaction. By default the function will use the highest value of Time if missing.
+#' @param dropfolder Optional logical for whether to add the filepath to the dataframe
+#' @param dropfolder Optional logical for whether to keep the whole filepath or drop the folders leading up to the file.
+#' @return A dataframe with time points of absorbance measurements
+read_csv8452 <- function(filepath, start, end, dropfolder = TRUE, droppath = FALSE) {
+
+  csv <- read.csv(filepath, skip = 1, header = FALSE) %>%
+    tibble::as_tibble() %>%
+    dplyr::mutate(Filename = filepath,
+                  .before = "V1") %>%
+    dplyr::rename(Absorbance = V2, # at 340 nm
+                  Time = V1)
+
+  if (missing(start)) {
+    start <- csv %>% dplyr::pull(Time) %>% min()
+  }
+
+  if (missing(end) | is.na(end)) {
+    end <- csv %>% dplyr::pull(Time) %>% max()
+  }
+
+  csv <- csv %>%
+    dplyr::filter(Time %>% dplyr::between(start, end))
+
+  if (dropfolder == TRUE){
+    csv <- csv %>%
+      dplyr::mutate(Filename = stringr::word(string = Filename, start = -1, sep = "/"))
+  }
+
+  if (droppath == TRUE){
+    csv <- csv %>% dplyr::select(!Filename)
+  }
+
+  return(csv)
+
+}
+
 #' Get enzyme activities
 #'
 #' Read .CSV file and calculate the slope in Absorbance Units, AU, per second. A start time must be provided.
 #'
 #' @param filepaths String or vector containing filepath(s) to .CSV files
+#' @param dropfolder Optional logical for whether to keep the whole filepath or drop the folders leading up to the file.
 #' @return A dataframe enzyme activity in AU/s
 #' @export
+
+filepaths <- list.files("/Users/art/Library/CloudStorage/OneDrive-UniversityofToronto/CO2\ study/CO2\ study\ analysis/data/enzyme", pattern = "*.CSV", full.names = TRUE)[1:3]
+
+# filepath <- filepaths[1]
+
 read_activity <- function(filepaths,
                           start, # must specify the reaction start time
-                          end) { # if end is missing, uses the points until the end
+                          end = NA,
+                          dropfolder = TRUE) { # optional
 
-  csv <- read.csv(filepaths, skip = 1, header = FALSE) %>%
-    dplyr::rename(Absorbance = V2, # at 340 nm
-                  Time = V1) # in seconds
+  if (missing(start)) {stop("You must specify reaction start times.")}
 
-  if (missing(end)) {
-    end <- csv %>%
-      dplyr::summarise(Time = max(Time)) %>%
-      dplyr::pull(Time)
-  }
+  filepath_df <- tibble::tibble(Filepath = filepaths,
+                                Start = start,
+                                End = end)
 
-  csv <- csv %>%
-    dplyr::filter(Time %>% between(start, end))
+  csv <- filepath_df %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(Data = list(read_csv8452(Filepath, Start, End, droppath = TRUE)))
 
-  activity <- lm(Absorbance ~ Time, data = csv) %>%
-    summary() %>%
-    broom::tidy() %>%
+  activity <- csv %>%
+    dplyr::group_by(Filepath) %>%
+    dplyr::mutate(Fits = purrr::map(Data, ~ lm(Absorbance ~ Time, data = .))) %>%
+    dplyr::mutate(TidyFits = purrr::map(Fits, broom::tidy)) %>%
+    tidyr::unnest(TidyFits) %>%
     dplyr::filter(term == "Time") %>%
-    dplyr::mutate(Filename = stringr::word(string = filepaths, start = -1, sep = "/"),
-                  Activity_AU_s = estimate/6.22,
-                  .before = "term",
-                  .keep = "none")
+    dplyr::rowwise() %>%
+    dplyr::mutate(Activity_AU_s = estimate/6.22) %>%
+    dplyr::select(Filepath, Activity_AU_s)
+
+  if (dropfolder == TRUE) {
+    activity <- activity %>%
+      dplyr::mutate(Filepath = stringr::word(string = Filepath, start = -1, sep = "/"))
+  }
 
   return(activity)
 }
