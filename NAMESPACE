@@ -1,1 +1,5 @@
-exportPattern("^[[:alpha:]]+")
+import(dplyr)importFrom("utils", "read.csv")
+importFrom("stringr", "word")
+importFrom("tidyr", "pivot_wider")
+importFrom("stats", "lm")
+importFrom("broom", "tidy")
