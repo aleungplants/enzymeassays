@@ -54,7 +54,7 @@ read_chl <- function(filepaths, units) {
 #' @param filepath String containing filepath(s) to .CSV files
 #' @param start Start of reaction. By default the function will use the lowest value of Time if missing.
 #' @param end Start of reaction. By default the function will use the highest value of Time if missing.
-#' @param dropfolder Optional logical for whether to add the filepath to the dataframe
+#' @param droppath Optional logical for whether to add the filepath to the dataframe
 #' @param dropfolder Optional logical for whether to keep the whole filepath or drop the folders leading up to the file.
 #' @return A dataframe with time points of absorbance measurements
 read_csv8452 <- function(filepath, start, end, dropfolder = TRUE, droppath = FALSE) {
