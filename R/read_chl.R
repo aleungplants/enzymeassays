@@ -11,7 +11,7 @@ read_chl <- function(filename,
 
   wav <- read.csv(filename, skip = 8, header = FALSE) %>%
     dplyr::mutate(Filename = stringr::word(string = filename, start = -1, sep = "/")) %>%
-    dplyr::mutate(Wavelength = 190+2*(row_number()-1)) %>%
+    dplyr::mutate(Wavelength = 190+2*(dplyr::row_number()-1)) %>%
     dplyr::mutate(Absorbance = V1,
            .after = "Wavelength",
            .keep = "unused") %>%
