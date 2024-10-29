@@ -1,3 +1,10 @@
+# Install:
+```
+install.packages("devtools")
+devtools::install_github("aleungplants/enzymeassays")
+```
+
+# Functions
 `read_chl(filepath, units)` reads the .WAV file you give it and returns a single row dataframe. 
 - `filepath` is the path to the .WAV file you want to read. `here::here()` is an easy way to get this filepath.
 - `units` is the nmol/ml or ug/ml (from Porra et al. 1989). By default if you don't type anything here it'll be nmol/ml. 
