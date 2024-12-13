@@ -4,6 +4,8 @@ install.packages("devtools")
 devtools::install_github("aleungplants/enzymeassays")
 ```
 
+very very work in progress
+
 # Functions
 `read_chl(filepath, units)` reads the .WAV file you give it and returns a single row dataframe. 
 - `filepath` is the path (or a vector of paths) to the .WAV file(s) you want to read. `list.files()` and/or `here::here()` is an easy way to get a list of filepaths.
